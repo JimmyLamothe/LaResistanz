@@ -1,0 +1,6 @@
+var Square = function Square(posX, posY, side, color){
+    posX = posX;
+    posY = posY;
+    side = side;
+    color = color;
+};
