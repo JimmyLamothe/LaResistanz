@@ -3,7 +3,7 @@ canvas.id = "canvas";
 canvas.width = 1200;
 canvas.height = 670;
 
-var FPS = 300;
+var FPS = 30;
 
 var ctx = canvas.getContext("2d");
 
@@ -13,7 +13,7 @@ var Square = function Square(posX, posY, side, color){
     this.side = side;
     this.color = color;
     this.draw = function(){
-	ctx.fillStyle=this.color;
+	ctx.fillStyle=color;
 	ctx.fillRect(this.posX, this.posY, this.side, this.side);
     }
 };
@@ -22,7 +22,7 @@ var squareList = [];
     
 for (var i = 0; i < 6; i++){
     side = 160;
-    colors = ["#00FF00","#FFFF00"];
+    colors = ["#333333","#999999"];
     var square = new Square(side * i, 0, side, colors[i%2]);
     squareList.push(square);
 }
@@ -61,7 +61,7 @@ var update = function(){
 };
 
 var generateBG = function(){
-    ctx.fillStyle="#00FFFF";
+    ctx.fillStyle="#000000";
     ctx.fillRect(0,0,canvas.width,canvas.height);
 };
 
