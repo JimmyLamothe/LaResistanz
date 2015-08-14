@@ -11,7 +11,7 @@ var timer = 0;
 // Get canvas context.
 var ctx = canvas.getContext("2d");
 
-// Define test character.
+// Character constructor.
 var Char = function Char(){
     this.name = "Gaston";
     this.health = 75;
@@ -131,37 +131,6 @@ var Square = function Square(posX, posY, side, color){
     }
 };
 
-// Creation of array holding all character square objects.
-var squareList = [];
-
-var color1 = "#555555";
-var color2= "#777777";
-    
-for (var i = 0; i < 6; i++){
-    side = 165;
-    colors = [color1, color2];
-    var square = new Square(side * i, canvas.height - side, side, colors[i%2]);
-    squareList.push(square);
-    squareList[i].name = "charSquare" + i;
-}
-
-// Debugging function to display current char square info.
-var squareInfo = function(){    
-    var info = "";
-    for (var i = 0; i < squareList.length; i++){
-	sq = squareList[i];
-	info += "Square " + i + ": ";
-	info += "posX = " + sq.posX + " - " ;
-	info += "posY = " + sq.posY + " - ";
-	info += "color = " + sq.color + " - ";
-	info += "side = " + sq.side + "\n";
-    }
-    return info;
-};
-
-// Get square side to place info rectangles on right side of screen.
-var squareSide = squareList[0].side;
-
 // Constructor for info rectangles.
 var Rectangle = function Rectangle(posY, height, color, name){
 	this.name = name;
@@ -177,15 +146,34 @@ var Rectangle = function Rectangle(posY, height, color, name){
     this.nameLayerDraw = function(){
     	ctx.fillStyle = "#000000";
     	ctx.font = "20px Arial";
-    	ctx.fillText(this.name, this.posX + this.width / 2 -
+    	ctx.fillText(this.name, this.posX + this.width / 2 - 
     				 this.name.length * 4.5, this.posY +25);
     }
 };
 
+
+// Creation of array holding all character square objects.
+var squareList = [];
+
+var color1 = "#555555";
+var color2= "#777777";
+    
+for (var i = 0; i < 6; i++){
+    side = 165;
+    colors = [color1, color2];
+    var square = new Square(side * i, canvas.height - side, side, colors[i%2]);
+    squareList.push(square);
+    squareList[i].name = "charSquare" + i;
+}
+
+// Get square side to place info rectangles on right side of screen.
+var squareSide = squareList[0].side;
+
+
 // Generate rectangle list.
 var rectList = [
 		new Rectangle(0, squareSide, color1, "specInfo"),
-		new Rectangle(canvas.height - squareSide, squareSide, color1,"genInfo"),
+		new Rectangle(canvas.height - squareSide, squareSide, color1,""),
 		new Rectangle(squareSide, canvas.height - 2 * squareSide, color2,"specAction")
 		];
 
@@ -207,59 +195,61 @@ var mapSquare = {
 	}
 };
 
+// Define general info bar.
 
-// Draw function to draw all objects on canvas.
-var draw = function(){
-    generateBG();
-    mapSquare.draw();
-    for (var i = 0; i < squareList.length; i++){
-	var current = squareList[i];
-	// Only draw if character present in charSquare.
-	if (current.character){
-		current.bgLayerDraw();
-		current.baseLayerDraw();
-		current.healthLayer();
-		current.nameLayer();
-    	}
-	}
-    for (var i = 0; i < rectList.length; i++){
-	//alert(squareInfo()); // Uncomment to debug.
-		var current = rectList[i];
-		current.bgLayerDraw();
-		current.nameLayerDraw();
+
+var genInfo = {
+    bgLayerSrc : "resources/images/menus/genInfo.png",
+    weatherIconSrc: [
+		     "resources/images/weather/sun.png",
+		     "resources/images/weather/clouds.png",
+		     "resources/images/weather/snow.png",
+		     ],
+    condArray : ["Sunny","Cloudy","Snow"],
+    foodRemaining : 1000,
+    foodConsumption : 20,
+    woodRemaining : 500,
+    woodConsumption: 15,
+    daysRemaining : 75,
+    daysFood : function(){
+	return this.foodRemaining / this.foodConsumption
+    },
+    daysWood : function(){
+	return this.woodRemaining / this.woodConsumption
+    },
+    daysWeek : ["Monday", "Tuesday", "Wednesday", "Thursday",
+		"Friday", "Saturday", "Sunday"],
+    timeDay : ["9 AM", "12 PM", "3 PM", "6 PM", "21 PM"],
+    currentCond : 0,
+    currentDay : 0,
+    currentTime: 0,
+    currentTemp : 4,
+    draw : function(){
+	ctx.drawImage(genInfoImg, 6 * squareList[0].width,
+		      canvas.height - squareList[0].width);
+	weatherIcon.src = this.weatherIconSrc[this.currentCond];
+	ctx.drawImage(weatherIcon, 6 * squareList[0].width + 10,
+		      canvas.height - squareList[0].width / 4);
+	ctx.fillStyle = "000000";
+	ctx.font = "18px Arial";
+	ctx.fillText(this.daysWeek[this.currentDay], 6 * squareList[0].width + 134,
+		     canvas.height - squareList[0].width /6);
+	ctx.fillText(this.timeDay[this.currentTime], 6 * squareList[0].width + 134,
+		     canvas.height - squareList[0].width / 30);
+	ctx.font = "24px Arial";
+	ctx.fillText(this.currentTemp, 6 * squareList[0].width + 55,
+		     canvas.height - squareList[0].width / 9);
+	ctx.fillText(Math.floor(this.daysFood()), 6 * squareList[0].width + 134,
+		     canvas.height - squareList[0].width / 1.44);
+	ctx.fillText(Math.floor(this.daysWood()), 6 * squareList[0].width + 134,
+		     canvas.height - squareList[0].width / 1.96);	
+	ctx.fillText(this.daysRemaining, 6 * squareList[0].width + 134,
+		     canvas.height - squareList[0].width / 3);
     }
+    
 };
 
 
-
-// Update function to give all objects correct info. To be defined.
-var update = function(){
-	//if (timer == 0) alert('check'); // Uncomment to debug.
-	if (lastClick[0].slice(0,4) ==  'char') {
-		activeSquare = lastClick[0].slice(10,11);
-		squareList[activeSquare].click();
-	}
-};
-
-// Draw black BG on whole canvas.
-var generateBG = function(){
-    ctx.fillStyle="#000000";
-    ctx.fillRect(0,0,canvas.width,canvas.height);
-};
-
-// Init function called after window load. Calls setInterval game loop.
-var init = function(){
-	// Add canvas to DOM as first child to body.
-    document.body.appendChild(canvas);
-    //    alert(document.body.innerHTML); // Uncomment to debug HTML.
-    setInterval(function(){
-     	if (timer == 0) {
-     		update();
-     	}
-	    draw();
-	    timer += 1;
-	}, 1000/FPS);
-};
 
 // Define element array to hold all screen elements.
 var elements = [];
@@ -275,23 +265,15 @@ rectList.forEach(function(rect){
 
 elements.push(mapSquare);
 
-// Debug function to list elements array contents. Uncomment alert to test.
-elements.forEach(function(element){
-	info = "";
-	if (element.fontSize){
-		info += "map";
-	}
-	else if (element.side){
-		info += "square";
-	} else {
-		info += "rectangle";
-	}
-	info += " posX = " + element.posX;
-	info += " posY = " + element.posY;
-	info += " width = " + element.width;
-	info += " height = " + element.height;
-	// alert(info);
-})
+
+// Create image object for info bar top layer:
+var genInfoImg = new Image();
+genInfoImg.src = genInfo.bgLayerSrc;
+
+var weatherIcon = new Image();
+weatherIcon.src = genInfo.weatherIconSrc[0];
+
+// Define variable to hold mouse click data.
 
 var lastClick = ['null',0,0];
 
@@ -319,5 +301,107 @@ var clickCheck = function(x, y, elem){
 	}
 };
 
+
+// Draw black BG on whole canvas.
+var generateBG = function(){
+    ctx.fillStyle="#000000";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+};
+
+
+// Draw function to draw all objects on canvas.
+var draw = function(){
+    // Draw black BG.
+    generateBG();
+
+    // Draw current map area.
+    mapSquare.draw();
+
+    // Draw characters present in map area.
+    for (var i = 0; i < squareList.length; i++){
+	var current = squareList[i];
+	// Only draw if character present in charSquare.
+	if (current.character){
+		current.bgLayerDraw();
+		current.baseLayerDraw();
+		current.healthLayer();
+		current.nameLayer();
+    	}
+    }
+
+    // Draw current info rectangles.
+    for (var i = 0; i < rectList.length; i++){
+	//alert(squareInfo()); // Uncomment to debug.
+	var current = rectList[i];
+	current.bgLayerDraw();
+	current.nameLayerDraw();
+	genInfo.draw();
+    }
+};
+
+
+// Update function to give all objects correct info. To be defined.
+var update = function(){
+	//if (timer == 0) alert('check'); // Uncomment to debug.
+	if (lastClick[0].slice(0,4) ==  'char') {
+		activeSquare = lastClick[0].slice(10,11);
+		squareList[activeSquare].click();
+	}
+};
+
+
+// Init function called after window load. Calls setInterval game loop.
+var init = function(){
+	// Add canvas to DOM as first child to body.
+    document.body.appendChild(canvas);
+    //    alert(document.body.innerHTML); // Uncomment to debug HTML.
+    setInterval(function(){
+     	if (timer == 0) {
+     		update();
+     	}
+	    draw();
+	    timer += 1;
+	}, 1000/FPS);
+};
+
+
 window.onload = init();
 
+
+
+
+// Debug functions.
+// Debug function to list elements array contents.
+
+var listElements = function(){
+    elements.forEach(function(element){
+	    info = "";
+	    if (element.fontSize){
+		info += "map";
+	    }
+	    else if (element.side){
+		info += "square";
+	    } else {
+		info += "rectangle";
+	    }
+	    info += " posX = " + element.posX;
+	    info += " posY = " + element.posY;
+	    info += " width = " + element.width;
+	    info += " height = " + element.height;
+	    alert(info);
+})
+};
+
+// Debugging function to display current char square info.
+var squareInfo = function(){    
+    var info = "";
+    for (var i = 0; i < squareList.length; i++){
+	sq = squareList[i];
+	info += "Square " + i + ": ";
+	info += "posX = " + sq.posX + " - " ;
+	info += "posY = " + sq.posY + " - ";
+	info += "color = " + sq.color + " - ";
+	info += "side = " + sq.side + "\n";
+    }
+    return info;
+};

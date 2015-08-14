@@ -1,0 +1,12 @@
+var genInfo = {
+    condArray : ["sun","cloud","snow"],
+    tempCels : 0,
+    currentTemp : [tempArray[0], tempCels],
+    foodRemaining : 1000,
+    daysTillSpring : 90,
+    daysFood : [foodRemaining / daysTillSpring],
+    daysWeek : ["Monday", "Tuesday", "Wednesday", "Thursday",
+		"Friday", "Saturday", "Sunday"],
+    timeDay : ["Morning", "Noon", "Afternoon", "Evening", "Night"],
+    currentTime : [daysWeek[0], timeDay[0]] 
+};
