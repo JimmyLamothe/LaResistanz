@@ -4,30 +4,112 @@ canvas.id = "game_canvas";
 canvas.width = 1200;
 canvas.height = 670;
 
-// Define frames per second.
+// Define frames per second to check for input. Only actually draws if timer at 0.
 var FPS = 30;
+
+// Reset timer to 0 to redraw screen.
 var timer = 0;
 
 // Get canvas context.
 var ctx = canvas.getContext("2d");
 
+// Character construction section:
+
+// Character name lists
+
+
+var nameListMale = ['Albert', 'Jacky', 'Lucien', 'Marc', 'Patrick', 'Louis',
+		    'Joseph', 'Raymond', 'Maurice', 'François', 'Marcel',
+		    'Georges', 'Jean-Pierre', 'Robert', 'Guy', 'Pierre',
+		    'Jacques', 'Gérard', 'Daniel', 'Jean', 'Michel',
+		    'Bernard', 'Alain', 'Claude', 'André', 'Christian',
+		    'René', 'Jean-Claude', 'Roger', 'Yves', 'Serge', 'Henri',
+		    'Gilbert', 'Dominique', 'Francis', 'Paul', 'Philippe',
+		    'Roland', 'Joël', 'Jean-Paul'];
+
+var nameListFemale = ['Hélène', 'Pierrette', 'Micheline', 'Odette',
+		      'Josiane', 'Suzanne', 'Claudine', 'Madeleine',
+		      'Bernadette', 'Ginette', 'Michelle', 'Andrée',
+		      'Jeanne', 'Danielle', 'Michèle', 'Yvette', 'Colette',
+		      'Christiane', 'Jacqueline', 'Monique', 'Marie',
+		      'Nicole', 'Françoise', 'Jeannine', 'Josette',
+		      'Denise', 'Anne', 'Thérèse', 'Liliane', 'Paulette',
+		      'Simone', 'Geneviève', 'Renée', 'Annie', 'Gisèle',
+		      'Éliane', 'Marcelle', 'Arlette', 'Raymonde',
+		      'Danièle'];
+
+var nameListFull = [nameListMale, nameListFemale];
+
+
 // Character constructor.
-var Char = function Char(){
-    this.name = "Gaston";
-    this.health = 75;
-    this.hunger = 30;
-    this.stress = 66;
+var Char = function Char(sex,ID){
+    this.ID = ID; // Permanent numeric ID.
+    this.sex = sex; // INT: 0 = male & 1 = female.
+    this.getName = function(){
+	// No name for default character.
+	if (this.ID == 1000) return '';
+	var nameList = nameListFull[this.sex];
+	var index = Math.floor(Math.random() * nameList.length);
+	var name = nameList[index];
+	nameList.splice(index,1); // To prevent duplicate names.
+	return name;
+    };    
+    this.name = this.getName();
+    this.getType = function(){
+	if (this.ID == 0) return 'player';
+	else if (this.ID == 1) return 'partner';
+	else if (this.ID < 6) return 'child';
+	else if (this.ID == 6) return 'priest';
+	else if (this.ID == 7) return 'tavernkeeper';
+	else if (this.ID == 1000) return '';
+	else return 'villager';
+    }
+    this.type = this.getType();
+    this.health = Math.random()*50 + 50;
+    this.hunger = Math.random()*75 + 25;
+    this.stress = Math.random()*75 + 25;
+    this.relationships = {};
 };
 
+// Village construction section:
+
+// Village variable & constructor.
+
+var village = {};
+
+var villageConstructor = function(size){
+    for (var i = 0; i < size; i++){
+	village[i] = new Char(Math.floor(Math.random() * 2), i);
+	// Non-active character ID = 1000. Used to keep square empty
+	village[1000] = new Char(0, 1000);
+	// Random relation creator for all villagers.
+	var startRelation = [2,3,3,3,4];
+	for (var j = 0; j < size; j++){
+	    village[i].relationships[j] = 0;
+	}
+	for (var k = 0; k < size; k++){
+	    if(village[i].relationships[k] !== 0){
+		var value = startRelation[Math.floor(Math.random() * 5)];
+		village[i].relationships[k] = value;
+		village[k].relationships[i] = value;
+	    }
+	}
+    }
+};
+
+villageConstructor(40);
+
 // Square object constructor for bottom characters with health bars.
-var Square = function Square(posX, posY, side, color){
+var Square = function Square(ID, posX, posY, side, color){
+    this.ID = ID;
     this.posX = posX;
     this.posY = posY;
     this.side = side;
     this.height = side;
     this.width = side;
     this.color = color;
-    this.character = new Char();
+    // Assign character to square for info. 
+    this.character = village[this.ID];
     this.space = 10;
     // Draw background for character square.
     this.bgLayerDraw = function(){
@@ -68,13 +150,13 @@ var Square = function Square(posX, posY, side, color){
 		ctx.fillRect(this.baseLayer.icon.posX, this.baseLayer.icon.posY,
 			     iconHeight, iconHeight);
 		ctx.fillRect(this.baseLayer.hungerBar.posX, this.baseLayer.hungerBar.posY,
-					 this.baseLayer.hungerBar.width, this.baseLayer.hungerBar.height);
+			     this.baseLayer.hungerBar.width, this.baseLayer.hungerBar.height);
 		ctx.fillRect(this.baseLayer.stressBar.posX, this.baseLayer.stressBar.posY,
-					 this.baseLayer.stressBar.width, this.baseLayer.stressBar.height);
+			     this.baseLayer.stressBar.width, this.baseLayer.stressBar.height);
     }
 
     // Draw current health, hunger and stress levels in green.
-    this.healthLayer = function(){
+    this.healthLayerDraw = function(){
     	var iconHeight = this.baseLayer.icon.height;
     	var barHeight = this.baseLayer.stressBar.height;
 		var healthRatio = this.character.health / 100;
@@ -92,21 +174,23 @@ var Square = function Square(posX, posY, side, color){
 			     16, barHeight * stressRatio);
     }
     // Draw character name and health bar IDs.
-    this.nameLayer = function(){
-		ctx.fillStyle = "#000000";
-		ctx.font = "20px Arial";
-		ctx.fillText(this.character.name, this.posX + this.space * 1.7, 
-			     this.posY + this.space * 6 + this.side / 2);
-		ctx.fillText("S", this.posX + 110, this.posY + this.space * 6 +
-			     this.side /2);
-		ctx.fillText("H", this.posX + 136, this.posY + this.space * 6 +
-			     this.side /2);
+    this.nameLayerDraw = function(){
+	ctx.fillStyle = "#000000";
+	ctx.font = "20px Arial";
+	ctx.fillText(this.character.name, this.posX + this.space * 1.7, 
+		     this.posY + this.space * 6 + this.side / 2);
+	ctx.fillText("S", this.posX + 110, this.posY + this.space * 6 +
+		     this.side /2);
+	ctx.fillText("H", this.posX + 136, this.posY + this.space * 6 +
+		     this.side /2);
     }
     // Action to take on click.
     this.click = function(){
+	// Regions to test to see if clicked.
     	var testList = [this.baseLayer.icon, this.baseLayer.stressBar,
     					this.baseLayer.hungerBar];
     	var current = this;
+	// Placeholder animation.
     	testList.forEach(function(elem){
     		if (clickCheck(lastClick[1],lastClick[2],elem)){
     			// alert(elem.name);
@@ -114,15 +198,15 @@ var Square = function Square(posX, posY, side, color){
     				timer = 1000;
     				var refLevel = current.baseLayer.stressBar.height;
     				var stressPer = (lastClick[2] - 
-    								 current.baseLayer.stressBar.posY) / refLevel;
+						 current.baseLayer.stressBar.posY) / refLevel;
     				var newStress = 100 - 100 * stressPer;
     				current.character.stress = newStress;
     			}
     			if (elem.name == 'hunger'){
     				timer = 1000;
     				var refLevel = current.baseLayer.hungerBar.height;
-    				var hungerPer = (lastClick[2] - 
-    								 current.baseLayer.hungerBar.posY) / refLevel;
+    				var hungerPer = (lastClick[2] -
+						 current.baseLayer.hungerBar.posY) / refLevel;
     				var newHunger = 100 - 100 * hungerPer;
     				current.character.hunger = newHunger;
     			}
@@ -144,7 +228,8 @@ var Rectangle = function Rectangle(posY, height, color, name){
 		ctx.fillRect(this.posX, this.posY, this.width, this.height);
     }
     this.nameLayerDraw = function(){
-    	ctx.fillStyle = "#000000";
+    	if (this.name == 'genInfo') return;
+	ctx.fillStyle = "#000000";
     	ctx.font = "20px Arial";
     	ctx.fillText(this.name, this.posX + this.width / 2 - 
     				 this.name.length * 4.5, this.posY +25);
@@ -152,53 +237,69 @@ var Rectangle = function Rectangle(posY, height, color, name){
 };
 
 
+
 // Creation of array holding all character square objects.
 var squareList = [];
 
-var color1 = "#555555";
-var color2= "#777777";
-    
 for (var i = 0; i < 6; i++){
+    var color1 = "#555555";
+    var color2 = "#777777";
     side = 165;
     colors = [color1, color2];
-    var square = new Square(side * i, canvas.height - side, side, colors[i%2]);
-    squareList.push(square);
-    squareList[i].name = "charSquare" + i;
+    var square = new Square(i, side * i, canvas.height - side, side, colors[i%2]);
+	squareList.push(square);
+	squareList[i].name = "charSquare" + i;
 }
 
 // Get square side to place info rectangles on right side of screen.
 var squareSide = squareList[0].side;
 
 
+
 // Generate rectangle list.
 var rectList = [
 		new Rectangle(0, squareSide, color1, "specInfo"),
-		new Rectangle(canvas.height - squareSide, squareSide, color1,""),
+		new Rectangle(canvas.height - squareSide, squareSide, color1,"genInfo"),
 		new Rectangle(squareSide, canvas.height - 2 * squareSide, color2,"specAction")
 		];
 
+
 // Define basic Map object.
+// TODO: Load all maps elsewhere with corresponding image object.
 var mapSquare = {
-	posX : 0,
-	posY : 0,
-	width : canvas.width - rectList[0].width,
-	height : canvas.height - squareList[0].height,
-	fontSize : 100,
-	imageSrc : "../images/village_aerial.jpg",
-	name : "map",
-	map: "HOME",
-	draw : function(){
-		ctx.fillStyle = "#BBBBBB";
-		ctx.font = this.fontSize + "px Arial";
-		ctx.fillText(this.map, this.width /2 - this.fontSize * this.map.length / 2.8,
+    posX : 0,
+    posY : 0,
+    width : canvas.width - rectList[0].width,
+    height : canvas.height - squareList[0].height,
+    fontSize : 100,
+    imageSrc : "resources/images/maps/village_aerial.jpg",
+    name : "map",
+    map: "HOME",
+    draw : function(){
+	ctx.fillStyle = "#BBBBBB";
+	ctx.font = this.fontSize + "px Arial";
+	ctx.fillText(this.map, this.width /2 - this.fontSize * this.map.length / 2.8,
 		 			 this.height /2 + this.fontSize / 5);
+    },
+    drawMap : function(){
+	var map = new Image();
+	map.src = this.imageSrc;
+	var originalRatio = map.naturalWidth / map.naturalHeight;
+	var screenRatio = this.width / this.height;
+	if (originalRatio < screenRatio) {
+	    map.width = this.width;
+	    map.height = this.width / originalRatio;
+	} else {
+	    map.height = this.height;
+	    map.width = this.height * originalRatio;
 	}
+	ctx.drawImage(map, 0, -80, map.width, map.height);
+    }
 };
 
 // Define general info bar.
-
-
 var genInfo = {
+    name : 'genInfo',
     bgLayerSrc : "resources/images/menus/genInfo.png",
     weatherIconSrc: [
 		     "resources/images/weather/sun.png",
@@ -266,10 +367,13 @@ rectList.forEach(function(rect){
 elements.push(mapSquare);
 
 
-// Create image object for info bar top layer:
+// Create image assets:
+
+// Create image object for info bar top layer.
 var genInfoImg = new Image();
 genInfoImg.src = genInfo.bgLayerSrc;
 
+// Create image object for weather icon.
 var weatherIcon = new Image();
 weatherIcon.src = genInfo.weatherIconSrc[0];
 
@@ -288,7 +392,7 @@ canvas.addEventListener('click', function(event){
 			lastClick = [elem.name, x, y];
 		}
 	})
-	// alert(lastClick);
+	    // alert(lastClick);
 	timer = 0;
 })
 
@@ -315,7 +419,7 @@ var draw = function(){
     generateBG();
 
     // Draw current map area.
-    mapSquare.draw();
+    mapSquare.drawMap();
 
     // Draw characters present in map area.
     for (var i = 0; i < squareList.length; i++){
@@ -324,8 +428,8 @@ var draw = function(){
 	if (current.character){
 		current.bgLayerDraw();
 		current.baseLayerDraw();
-		current.healthLayer();
-		current.nameLayer();
+		current.healthLayerDraw();
+		current.nameLayerDraw();
     	}
     }
 
@@ -357,10 +461,10 @@ var init = function(){
     //    alert(document.body.innerHTML); // Uncomment to debug HTML.
     setInterval(function(){
      	if (timer == 0) {
-     		update();
+	    update();
      	}
-	    draw();
-	    timer += 1;
+	draw();
+	timer += 1;
 	}, 1000/FPS);
 };
 
@@ -384,6 +488,7 @@ var listElements = function(){
 	    } else {
 		info += "rectangle";
 	    }
+	    info += " name = " + element.name;
 	    info += " posX = " + element.posX;
 	    info += " posY = " + element.posY;
 	    info += " width = " + element.width;
@@ -391,6 +496,7 @@ var listElements = function(){
 	    alert(info);
 })
 };
+// listElements();
 
 // Debugging function to display current char square info.
 var squareInfo = function(){    
@@ -405,3 +511,39 @@ var squareInfo = function(){
     }
     return info;
 };
+
+// Debug function to test villager creation. Modify and uncomment as needed.
+/*
+for (var i = 0; i < 10; i++){
+    alert (village[i].type);
+}
+*/
+
+
+
+// Test for Char constructor:
+
+var testChar = function(){
+    var char = new Char(0,100);
+    var bool = (
+		char.ID == 100 &&
+		char.sex == 0 &&
+		nameListMale.indexOf(char.name) == -1 &&
+		char.type == 'villager' &&
+		char.health <= 100 && char.health >=0 &&
+		char.stress <= 100 && char.stress >=0 &&
+		char.hunger <= 100 && char.hunger >=0 &&
+		village[0].relationships[10] == village[10].relationships[0]
+		);
+    if (bool) return ("testChar passed\n");
+    else return("testChar failed\n");
+};
+
+var testSuite = function(){
+    alert(testChar());
+};
+
+
+// Test suite - Uncomment to test.
+
+// testSuite();

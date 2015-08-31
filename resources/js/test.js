@@ -1,23 +1,9 @@
-var squareList = [];
-    
-for (var i = 0; i < 6; i++){
-    side = 160;
-    colors = ["#333333","#999999"];
-    var square = new Square(side * i, 0, side, colors[i%2]);
-    squareList.push(square);
+var test1 = [1,2,3];
+
+for (var i in test1){
+    console.log(i);
 }
 
-var squareInfo = function(){    
-    var info = "";
-    for (var i = 0; i < squareList.length; i++){
-	sq = squareList[i];
-	info += "Square " + i + ": ";
-	info += "posX = " + sq.posX + "- " ;
-	info += "posY = " + sq.posY + "- ";
-	info += "color = " + sq.color + "- ";
-	info += "side = " + sq.side + "\n";
-    }
-    return info;
-};
-
-console.log(squareInfo);
+for (var i of test1){
+    console.log(i);
+}
