@@ -1,9 +1,11 @@
-var test1 = [1,2,3];
+var fs = require("fs");
 
-for (var i in test1){
-    console.log(i);
-}
+var readFileSync = function(path){
+    return fs.readFileSync(path).toString();
+};
 
-for (var i of test1){
-    console.log(i);
-}
+var sourceJSON = readFileSync('../json/namelists.json');
+
+var parsedJSON = JSON.parse(sourceJSON);
+
+console.log(parsedJSON);

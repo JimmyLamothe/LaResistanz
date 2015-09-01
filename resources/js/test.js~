@@ -1,23 +1,7 @@
-var test1 = {
-    1 : 2,
-    3 : 4
-};
+fs = require('fs');
 
-console.log(test1);
+var sourceJSON = fs.readFile("../json/namelists.json");
 
-var test2 = {
-    1 : 2,
-    3 : 4
-};
+var parsedJSON = JSON.parse(sourceJSON);
 
-console.log(test2);
-
-console.log(test1 == test2);
-
-var testFunct1 = function(){
-};
-
-var testFunct2 = function(){
-};
-
-console.log(testFunct1 == testFunct2);
+console.log(parsedJSON);
